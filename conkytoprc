@@ -1,0 +1,24 @@
+# vim: ft=conkyrc
+background no
+out_to_x no
+out_to_console yes
+update_interval 1
+use_spacer none
+
+TEXT
+^fg(\#92b19e)CPU^fg():^fg(\#92b19e)${cpu}%
+
+${if_up em0}
+^fg():: eth0: ^fg(\#99cc33)^i(.dzen/down.xbm)
+${downspeedf eth0} kB/s ^fg(\#ff3300)^i(.dzen/up.xbm)
+${upspeedf eth0} kB/s
+${endif}
+BATT: ${battery_percent 0}
+
+^fg():: ^fg(\#afd78a)
+${if_match ${battery_percent 0} < 50}^fg(\#ffa75d)
+${endif}
+${if_match ${battery_percent 0} < 10}^fg(\#ff7272)
+${endif}
+${battery_percent 0}
+^fg():: ^fg(\#afd78a)
