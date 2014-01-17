@@ -1,6 +1,8 @@
 #!/bin/sh
-# xrandr -s 1280x800
 xrdb -load $HOME/.Xresources
+xrandr -s 1280x800
+feh --bg-center $HOME/wp/nebula0.jpg
+xcompmgr -CcfF -I-.02 -O-.04 -D1 -t-5 -l-3 -r4.2 &
 xmonad >$HOME/.xmonad/log.txt 2>&1
 # xrandr -s 1280x800
 # xsetroot -cursor_name left_ptr

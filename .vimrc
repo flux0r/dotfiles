@@ -12,7 +12,6 @@ set formatoptions+=r
 syntax on
 filetype plugin indent on
 syntax enable
-colorscheme default
 
 au FileType haskell setlocal
 	\ tabstop=4 softtabstop=4 shiftwidth=4
