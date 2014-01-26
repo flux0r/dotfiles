@@ -1,27 +1,31 @@
 import Control.Exception (SomeException, catch)
 import Foreign.C.Error (throwErrnoIfMinus1_)
-import Foreign.C.String (peekCString)
+import Foreign.C.String (CString, peekCString)
+import Foreign.C.Types (CInt (CInt), CSize (CSize))
 import Foreign.Marshal.Array (allocaArray0)
 import Graphics.X11 (Screen, defaultScreenOfDisplay, heightOfScreen,
                      openDisplay, widthOfScreen)
-import System.Directory (doesFileExit
+import System.Directory (doesFileExist, removeFile)
 import System.Environment (getEnv)
 import System.IO.UTF8 (hPutStrLn)
-import XMonad ((<+>))
+import XMonad ((<+>), xmonad)
 import XMonad.Actions.SpawnOn (manageSpawn)
 import XMonad.Config (defaultConfig)
 import XMonad.Core (XConfig (..), borderWidth, catchIO, handleEventHook,
                     spawn)
-import XMonad.Hooks.DynamicLog (PP (..), defaultPP, dzenColor, wrap)
-import XMonad.Hooks.ManageDocks (avoidStruts)
+import XMonad.Hooks.DynamicLog (PP (..), defaultPP, dzenColor,
+                                dynamicLogWithPP, wrap)
+import XMonad.Hooks.EwmhDesktops (ewmh, fullscreenEventHook)
+import XMonad.Hooks.ManageDocks (avoidStruts, manageDocks)
 import XMonad.Hooks.ManageHelpers (doFullFloat, isFullscreen)
 import XMonad.Hooks.UrgencyHook (DzenUrgencyHook (args), dzenUrgencyHook,
                                  withUrgencyHook)
-import XMonad.ManageHook ((-->), (=?), className, composeAll, doFloat,
-                          doIgnore, resource, title)
 import XMonad.Layout ((|||), Full (Full))
 import XMonad.Layout.HintedTile (Alignment (TopLeft), HintedTile (HintedTile),
                                  Orientation (Tall, Wide))
+import XMonad.Layout.WindowNavigation (windowNavigation)
+import XMonad.ManageHook ((-->), (=?), className, composeAll, doFloat,
+                          doIgnore, resource, title)
 import XMonad.Layout.NoBorders (noBorders, smartBorders)
 import XMonad.Layout.PerWorkspace (onWorkspace, onWorkspaces)
 import XMonad.Layout.ResizableTile (ResizableTall (ResizableTall))
@@ -33,6 +37,7 @@ import XMonad.Util.Run (spawnPipe)
 foreign import ccall unsafe "gethostname" gethostname
     :: CString -> CSize -> IO CInt
 
+get_host_name :: IO String
 get_host_name = let sz = 256 in
     allocaArray0 sz (\x ->
     throwErrnoIfMinus1_ "get_host_name" (gethostname x (fromIntegral sz)) >>
@@ -53,8 +58,8 @@ my_separator    = "#444444"
 my_font         = "-misc-fixed"
 
 main = do
-    home <- catch (getEnv "HOME") (const (return []))
-    d <- catch (getEnv "DISPLAY") (const (return []))
+    home <- catch (getEnv "HOME") handler
+    d <- catch (getEnv "DISPLAY") handler
     dpy <- openDisplay d
     let scr = defaultScreenOfDisplay dpy
     let my_width = read (show (widthOfScreen scr)) :: Int
@@ -108,6 +113,9 @@ main = do
                                     (my_log_hook din_status home)
         , focusFollowsMouse     = True
         }))
+  where
+    handler :: SomeException -> IO [b]
+    handler = (const . return) []
 
 
 my_urgency_hook h w = withUrgencyHook dzenUrgencyHook
@@ -117,7 +125,7 @@ my_urgency_hook h w = withUrgencyHook dzenUrgencyHook
              ]
     }
 
-startup home = spawn "xset -b b off" >> spawn "xrdb -merge ~/.Xresources"
+startup home _ = spawn "xset -b b off" >> spawn "xrdb -merge ~/.Xresources"
 
 restart_xmonad = spawn "killall conky dzen2 stalonetray" >>
     catchIO (writeFile "/tmp/xmonad_restart" "true") >>
