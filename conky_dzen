@@ -1,0 +1,11 @@
+background yes
+out_to_console yes
+out_to_x no
+update_interval 1
+
+TEXT
+| $mpd_smart MPD: $mpd_status \
+| CPU: ${cpu cpu}% MEM:$memperc% \
+| em0 D:${downspeed em0} U:${upspeed em0} \
+| ${time %a %d %b} \
+| ${time %k:%M}
