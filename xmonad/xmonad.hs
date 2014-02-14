@@ -27,10 +27,19 @@ import XMonad.Actions.DynamicWorkspaces
 import XMonad.Actions.UpdatePointer
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.FadeInactive
+import XMonad.Hooks.FloatNext (floatNextHook)
 import XMonad.Hooks.DynamicLog (PP(..), defaultPP, dynamicLogWithPP,
                                 dzenColor, pad, shorten)
+import XMonad.Hooks.InsertPosition (Focus (Newer), Position (End), insertPosition)
+import XMonad.Hooks.Place (placeHook, smart, withGaps)
 import XMonad.Layout.IndependentScreens (withScreens)
+import XMonad.Layout.LimitWindows
+import XMonad.Layout.MultiToggle
+import XMonad.Layout.MultiToggle.Instances
+import XM
+import XMonad.Layout.Renamed
 import XMonad.Layout.Spiral
+import XMonad.Util.NamedScratchpad
 import XMonad.Util.Run (spawnPipe)
 import XMonad.Util.SpawnOnce (spawnOnce)
 import XMonad.Util.Scratchpad
@@ -49,7 +58,7 @@ import Data.Function
 -- The preferred terminal program, which is used in a binding below and by
 -- certain contrib modules.
 --
-myTerminal      = "urxvtc"
+myTerminal      = "urxvtc -name urxvt"
 
 myFont          = "-*-proggyopti-medium-r-normal-*-11-*-96-96-c-70-iso8859-1"
 
@@ -58,6 +67,7 @@ myColorRed      = "#b691a0"
 myColorBrown    = "#504e2a"
 myColorWhite    = "#d0d6dd"
 myColorCyan     = "#357aac"
+myColorGrey     = "#444444"
  
 -- Width of the window border in pixels.
 --
@@ -79,11 +89,31 @@ myModMask       = mod4Mask
 --
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
 --
-myWorkspaces    = withScreens 2 ["term", "ed", "www"] ++ map show [5..10] ++ ["music"]
+myWorkspaces    = withScreens 2 ["term", "www", "media", "comm"] ++ map show [5..10] ++ ["music"]
+
+myManageHook = placeHook (withGaps (20,12,12,12) (smart (0.5,0.5))) <+>
+               insertPosition End Newer <+> floatNextHook <+>
+               namedScratchpadManageHook myScratchPads <+>
+        (composeAll . concat $
+        [ [ resource  =? r --> doF (W.view "term" . W.shift "term")     | r <- myTermApps    ]
+        , [ resource  =? r --> doF (W.view "www" . W.shift "www")       | r <- myWebApps     ]
+        , [ resource  =? r --> doF (W.view "media" . W.shift "media")   | r <- myMediaApps   ]
+        , [ resource  =? r --> doF (W.view "comm" . W.shift "comm")     | r <- myCommApps    ]
+        , [ resource  =? r --> doFloat                            | r <- myFloatApps   ]
+        , [ className =? c --> ask >>= doF . W.sink               | c <- myUnfloatApps ]
+        ]) <+> manageHook defaultConfig
+        where
+            myTermApps    = ["urxvt", "xterm", "xfontsel"]
+            myWebApps     = ["chrome", "firefox"]
+            myMediaApps   = ["inkscape", "vlc", "ncmpcpp", "gimp"]
+            myCommApps    = ["mutt", "weechat"]
+            myFloatApps   = []
+            myUnfloatApps = ["Gimp"]
+
  
 -- Border colors for unfocused and focused windows, respectively.
 --
-myNormalBorderColor  = myColorBG
+myNormalBorderColor  = myColorGrey
 myFocusedBorderColor = myColorCyan
 
 myXPConfig = defaultXPConfig
@@ -108,7 +138,7 @@ renameWS newTag = windows $ \s -> let old = W.tag $ W.workspace $ W.current s
 --
 
 myXmonadBarL = concat
-    [ "dzen2 -x '0' -y '0' -h '16' -w '680' -ta 'l'"
+    [ "dzen2 -x '0' -y '0' -h '16' -w '1280' -ta 'l'"
     , " -fg '", myColorWhite
     , "' -bg '", myColorBG
     , "' -fn '", myFont
@@ -116,7 +146,7 @@ myXmonadBarL = concat
     ]
 myXmonadBarR = concat
     [ "conky -c /home/b/.xmonad/conky_dzen | "
-    , "dzen2 -x '680' -y '0' -w '1000' -h '16' -ta 'r' "
+    , "dzen2 -x '1280' -y '0' -w '1920' -h '16' -ta 'r' "
     , "-bg '", myColorBG
     , "' -fg '", myColorWhite
     , "' -fn '", myFont
@@ -131,7 +161,33 @@ myStartupHook =
     spawnOnce "xrdb -load $HOME/.Xresources" >>
     spawnOnce "sh $HOME/.fehbg &" >>
     spawnOnce "unclutter &" >>
-    spawnOnce "compton -c -b -e 0.8 -t -8 -l -9 -r 6 -o 0.7 -m 1.0 &"
+    spawnOnce "compton -cIDOrlt -b -e 1.0 -o 0.1 -m 1.0 &" >>
+    spawnOnce "urxvtc -name terminal -e tmux &"
+
+------------------------------------------------------------------------------
+-- Scratchpads
+
+myScratchPads =
+    [ NS "terminal"
+         "urxvtc -name terminal -e tmux attach"
+         (resource =? "terminal")
+         my_pos
+    , NS "music"
+         "urxvtc -name music -e ncmpcpp"
+         (resource =? "music")
+         my_pos
+    , NS "ghci"
+         ("urxvtc -bg [75]" ++ myColorBG ++ " -name ghci -e ghci")
+         (resource =? "ghci")
+         my_pos
+    , NS "notes"
+         ("urxvtc -bg [75]" ++ myColorBG ++ " -blr 80x2 -name notes -e vim")
+         (resource =? "notes")
+         my_pos
+    ]
+  where
+    my_pos = customFloating (W.RationalRect (1/3) (1/3) (1/3) (1/3))
+    
 
 ------------------------------------------------------------------------
 -- Key bindings. Add, modify or remove key bindings here.
@@ -140,7 +196,6 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
  
     -- launch a terminal
     [ ((modMask .|. shiftMask, xK_Return)       , spawn $ XMonad.terminal conf)
-    , ((modMask,               xK_c)            , spawn $ XMonad.terminal conf)
 
     , ((modMask .|. shiftMask, xK_r)            , spawn "pkill dzen && xmonad --recompile; xmonad --restart")
 
@@ -151,6 +206,12 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
     , ((modMask .|. shiftMask, xK_l)            , spawn "xscreensaver-command -lock")
 
     , ((modMask              , xK_x)            , spawn "xmodmap ~/.Xmodmap")
+
+    -- Scratchpads
+    , ((modMask .|. controlMask, xK_t)          , namedScratchpadAction myScratchPads "terminal")
+    , ((modMask .|. controlMask, xK_c)          , namedScratchpadAction myScratchPads "ghci")
+    , ((modMask .|. controlMask, xK_m)          , namedScratchpadAction myScratchPads "music")
+    , ((modMask .|. controlMask, xK_n)          , namedScratchpadAction myScratchPads "notes")
 
     --, ((modMask .|. controlMask, xK_p), spawn "sleep 0.2; scrot -s")
     , ((modMask, xK_p), spawn "scrot")
@@ -311,6 +372,22 @@ myMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList $
 --      delta   = 2/100
 
 myLayout = avoidStruts (layoutHook defaultConfig)
+
+-- term_layout = workspaceDir "~" (spiral (4/3) ||| oneBig ||| space ||| lined ||| grid)
+-- web_layout = workspaceDir "~/Downloads" (monocle ||| oneBig ||| space ||| lined)
+-- media_layout = workspaceDir "~/Documents" (T.toggleLayouts gimp (monocle ||| oneBig ||| space ||| lined))
+-- comm_layout = workspaceDir "~" (oneBig ||| spiral(4/3) ||| space ||| lined ||| grid)
+-- default_layout = workspaceDir "~" (spiral (4/3) ||| oneBig ||| float ||| space ||| lined ||| monocle ||| grid)
+
+oneBig = renamed [Replace "oneBig"]
+           (limitWindows 6  
+             (Mirror 
+               (mkToggle (single MIRROR) 
+                 (mkToggle (single REFLECTX) 
+                   (mkToggle (single REFLECTY) 
+                     (OneBig (2/3) (2/3)))))))
+
+
  
 ------------------------------------------------------------------------
 -- Window rules:
@@ -340,7 +417,7 @@ myLayout = avoidStruts (layoutHook defaultConfig)
 --     , scratchpadManageHook (W.RationalRect 0.125 0.25 0.75 0.5)
 --     ]
 
-myManageHook = manageDocks <+> manageHook defaultConfig
+-- myManageHook = manageDocks <+> manageHook defaultConfig
  
  
 ------------------------------------------------------------------------

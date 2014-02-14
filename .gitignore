@@ -1,1 +1,8 @@
 *swp
+*.hi
+*.o
+xmonad*freebsd
+*errors
+*log
+*core
+*test

@@ -1,40 +1,69 @@
 xcursor.theme:          Chameleon-DarkSkyBlue
 
-URxvt.scrollBar:        false
 
 *font:                  -*-proggyopti-medium-r-normal-*-11-*-96-96-c-70-iso8859-1
+*boldFont:              -artwiz-aqui-medium-r-normal-*-11-*-*-*-*-*-iso646.1991-irv
+!*font: -*-edges-*-*-*-*-10-*-*-*-*-*-iso646.1991-irv
+!*font: -*-webbysmall-*-*-*-*-*-*-*-*-*-*-iso8859-1
 
-*background:            #040810
-*foreground:            #99a5ff
 
-! Black + DarkGrey
-*color0:                #131316
-*color8:                #3a3a41
+*background: #07011b
+*foreground: #6eedf2
 
-! DarkRed + Red
-*color1:                #936276
-*color9:                #b691a0
+! --- standard colors ---
 
-! DarkGreen + Green
-*color2:                #108893
-*color10:               #47ddeb
+! black
+*color0: #040404
 
-! DarkYellow + Yellow
-*color3:                #504e2a
-*color11:               #b9b579
+! bright_black
+*color8: #444444
 
-! DarkBlue + Blue
-*color4:                #3e6fa3
-*color12:               #97b7d8
+! red
+*color1: #a76b7c
 
-! DarkMagenta + Magenta
-*color5:                #926388
-*color13:               #b592ae
+! bright_red
+*color9: #e4608a
 
-! DarkCyan + Cyan
-*color6:                #b1d1e7
-*color14:               #357aac
+! green
+*color2: #45d6c5
 
-! LightGrey + White
-*color7:                #a3b0bd
-*color15:               #d0d6dd
+! bright_green
+*color10: #86efcf
+
+! yellow
+*color3: #90b877
+
+! bright_yellow
+*color11: #74d6a3
+
+! blue
+*color4: #6785f4
+
+! bright_blue
+*color12: #91c6ff
+
+! magenta
+*color5: #9685d2
+
+! bright_magenta
+*color13: #a1c6f3
+
+! cyan
+*color6: #45b4f4
+
+! bright_cyan
+*color14: #86d5ff
+
+! white
+*color7: #e2e2e2
+
+! bright_white
+*color15: #ffffff
+
+URxvt.scrollBar:        false
+URxvt.depth:            32
+URxvt*background:       [40]#07011b
+URxvt*blurRadius:       1x32
+URxvt*visualBell:       true
+URxvt*cursorBlink:      true
+URxvt*colorBD:          #a1c6f3
